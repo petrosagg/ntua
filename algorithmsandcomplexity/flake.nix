@@ -1,7 +1,7 @@
 {
   description = "LaTeX Document Demo";
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/unstable;
+    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
     flake-utils.url = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -9,7 +9,7 @@
     let
       pkgs = nixpkgs.legacyPackages.${system};
       tex = pkgs.texlive.combine {
-          inherit (pkgs.texlive) scheme-minimal latex-bin latexmk;
+          inherit (pkgs.texlive) scheme-minimal latex-bin latexmk nicematrix pgf tools amsmath epstopdf epstopdf-pkg infwarerr grfext kvdefinekeys kvoptions ltxcmds kvsetkeys;
       };
     in rec {
       packages = {
@@ -22,8 +22,10 @@
             export PATH="${pkgs.lib.makeBinPath buildInputs}";
             mkdir -p .cache/texmf-var
             env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
+              SOURCE_DATE_EPOCH=$(date -d "2021-11-30" +%s) \
               latexmk -interaction=nonstopmode -pdf -lualatex \
-              document.tex
+              -pretex="\pdfvariable suppressoptionalinfo 512\relax" \
+              -usepretex ex1/document.tex
           '';
           installPhase = ''
             mkdir -p $out

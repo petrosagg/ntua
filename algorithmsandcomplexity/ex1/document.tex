@@ -1,5 +1,13 @@
 \documentclass[a4paper]{article}
 
+\usepackage{nicematrix}
+
 \begin{document}
-  Hello, World!
+  \begin{NiceTabular}{p{5.5cm}|p{2cm}}
+  \CodeBefore
+    \rowcolors{2}{white}{gray!30}
+  \Body \hline
+    droggel & 23 \\ \hline
+    jug     & 42 \\ \hline
+  \end{NiceTabular}
 \end{document}
