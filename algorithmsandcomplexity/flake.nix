@@ -9,7 +9,7 @@
     let
       pkgs = nixpkgs.legacyPackages.${system};
       tex = pkgs.texlive.combine {
-          inherit (pkgs.texlive) scheme-minimal latex-bin latexmk nicematrix pgf tools amsmath epstopdf epstopdf-pkg infwarerr grfext kvdefinekeys kvoptions ltxcmds kvsetkeys;
+          inherit (pkgs.texlive) scheme-minimal latex-bin latexmk nicematrix pgf tools amsmath epstopdf epstopdf-pkg infwarerr grfext kvdefinekeys kvoptions ltxcmds kvsetkeys xetex oberdiek cite colortbl hyperref bookmark mathtools listings import algorithms float algorithmicx varwidth enumitem thmtools footmisc caption;
       };
     in rec {
       packages = {
@@ -21,11 +21,11 @@
           buildPhase = ''
             export PATH="${pkgs.lib.makeBinPath buildInputs}";
             mkdir -p .cache/texmf-var
+            cd ex1;
             env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
               SOURCE_DATE_EPOCH=$(date -d "2021-11-30" +%s) \
-              latexmk -interaction=nonstopmode -pdf -lualatex \
-              -pretex="\pdfvariable suppressoptionalinfo 512\relax" \
-              -usepretex ex1/document.tex
+              latexmk -interaction=nonstopmode -pdf -xelatex \
+              main.tex
           '';
           installPhase = ''
             mkdir -p $out
