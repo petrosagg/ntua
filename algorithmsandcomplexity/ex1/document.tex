@@ -1,13 +1,48 @@
-\documentclass[a4paper]{article}
+\newif\iftwocolumn
+\newif\ifonecolumn
+\newif\iflncs
+\newif\ifccs
+\newif\ifanonymous
+\newif\iftoday
+\todaytrue
+% \ccstrue % pick one: LNCS or CCS (and `make clean`)
+\lncstrue
+% \anonymoustrue
 
-\usepackage{nicematrix}
+\ifccs
+  \twocolumntrue
+\fi
+\iflncs
+  \onecolumntrue
+\fi
+
+\iflncs
+\documentclass[runningheads]{llncs}
+\fi
+\ifccs
+\documentclass[sigconf, anonymous]{acmart}
+\input{ccs-preamble}
+\fi
+
+\usepackage{preamble}
 
 \begin{document}
-  \begin{NiceTabular}{p{5.5cm}|p{2cm}}
-  \CodeBefore
-    \rowcolors{2}{white}{gray!30}
-  \Body \hline
-    droggel & 23 \\ \hline
-    jug     & 42 \\ \hline
-  \end{NiceTabular}
+\import{./}{frontpage.tex}
+\import{./}{solutions.tex}
+
+\vfill
+\pagebreak
+\iflncs
+\thispagestyle{plain}
+\fi
+
+\ifccs
+  \bibliographystyle{ACM-Reference-Format}
+\else
+  \bibliographystyle{abbrv}
+\fi
+
+\pdfbookmark[section]{References}{references}
+\bibliography{biblio,crypto,pubs}
+
 \end{document}

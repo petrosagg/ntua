@@ -1,0 +1,61 @@
+\section{Problem 1}
+According to Sipser~\cite{sipser}...
+
+\section{Problem 2}
+We know that $1 + 1 = 2$, therefore:
+
+\begin{align*}
+  1 + 1 &= 2 \\
+  2 + 2 &= 4 \\
+  4 + 4 &= 8
+\end{align*}
+
+\section{Problem 3}
+
+Our solution is depicted in Algorithm~\ref{alg:problem-3}.
+
+\import{./}{algorithms/problem3}
+
+\section{Problem 4}
+
+\begin{lemma}
+  All circles are round.
+\end{lemma}
+\begin{proof}
+  Suppose, towards a contradiction, that there exists a circle $C$
+  which is not round. Because it is not round, it must have some
+  corner $Z$ on it. However, this contradicts the fact that it is
+  a circle.
+  \Qed
+\end{proof}
+
+\begin{theorem}\label{thm:blue}
+  For all $n \in \mathbb{N}$, the number $n$ is blue.
+\end{theorem}
+\begin{proof}
+  We know that $n = 0$ is blue.
+  Suppose $n \in \mathbb{N}$ is blue. We will prove
+  that $n + 1$ is also blue. We know that because the two numbers are touching,
+  they must be the same color. Therefore $n + 1$ is also blue.
+  By induction, the statement follows.
+  \Qed
+\end{proof}
+
+\begin{corollary}
+  All natural numbers have the same color.
+\end{corollary}
+\begin{proof}
+  The corollary follows directly from Theorem~\ref{thm:blue}.
+  \Qed
+\end{proof}
+
+\section{Problem 5}
+
+The solution is illustrated in Figure~\ref{fig:problem-5}.
+
+\begin{figure*}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{figures/problem5.png}
+  \caption{The solution to Problem 5.}
+  \label{fig:problem-5}
+\end{figure*}
