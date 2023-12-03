@@ -1,0 +1,35 @@
+# The alphabet Σ
+1
+
+# The alphabet Γ
+_ 1 P
+
+# The states Q
+S < > ! H
+
+# Each non-comment line below is a δ function transition
+# First mark all input as pending(P) until we find a blank
+S 1 S P R
+
+# When we find a blank, rewind(<) until we find a P
+S _ < _ L
+< 1 < 1 L
+
+# Reached the beginning of the tape without finding a P, we're done
+< _ H _ R
+
+# We found a P. Replace it with 1 and write an additional one at the end
+<  P > 1 R
+
+# Keep moving right until we find a blank
+> 1 > 1 R
+
+# We found a blank, replace it with 1 and go back to check(?)
+> _ < 1 L
+
+# Unreachable transitions
+! _ ! _ R
+! 1 ! _ R
+! P ! _ R
+S P ! _ R
+> P ! _ R
