@@ -29,11 +29,11 @@ struct MachineDescription<'a> {
     /// The set of states Q
     q: HashSet<State<'a>>,
     /// The transition function δ
-    delta: HashMap<(State<'a>, Symbol<'a>), (State<'a>, Symbol<'a>, Direction)>,
+    delta: HashMap<(State<'a>, Symbol<'a>), HashSet<(State<'a>, Symbol<'a>, Direction)>>,
 }
 
 /// The type of move a Turing machine can make
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Direction {
     /// A move to the left
     Left,
@@ -95,7 +95,7 @@ impl<'a> MachineDescription<'a> {
             if parts.next().is_some() {
                 return Err("invalid δ transition entry".into());
             }
-            delta.insert((q0, s0), (q1, s1, m));
+            delta.entry((q0, s0)).or_insert_with(HashSet::new).insert((q1, s1, m));
         }
 
         // TODO: check that the input contains only symbols from Σ
@@ -127,30 +127,66 @@ impl<'a> MachineDescription<'a> {
     }
 
     // Instantiate this machine with the given input
-    fn instantiate<'m>(&'m self, input: &'a str) -> Configuration<'m, 'a> {
+    fn instantiate<'m>(&'m self, input: &'a str) -> MultiConfiguration<'m, 'a> {
+        let mut configurations = VecDeque::new();
         let mut suffix: VecDeque<_> = input.split_whitespace().map(Symbol).collect();
         // TODO: check that the input contains only symbols from Σ
         let cur = suffix.pop_front().unwrap_or(BLANK);
-        Configuration {
-            machine: self,
+        configurations.push_back(Configuration {
             prefix: VecDeque::new(),
             head: (START, cur),
             suffix,
+        });
+        MultiConfiguration {
+            machine: self,
+            configurations,
         }
     }
 }
 
+/// The compound configuration of a non-deterministic Turing machine
 #[derive(Debug)]
-struct Configuration<'m, 'a> {
+struct MultiConfiguration<'m, 'a> {
     machine: &'m MachineDescription<'a>,
+    configurations: VecDeque<Configuration<'a>>,
+}
+
+impl MultiConfiguration<'_, '_> {
+    fn step(&mut self) {
+        for _ in 0..self.configurations.len() {
+            let conf = self.configurations.pop_front().unwrap();
+            let actions = &self.machine.delta[&conf.head];
+            for &(new_state, new_symbol, dir) in actions {
+                let mut conf = conf.clone();
+                conf.step(new_state, new_symbol, dir);
+                self.configurations.push_back(conf);
+            }
+        }
+    }
+
+    fn display<W: WriteColor>(&self, mut w: W) -> std::io::Result<()> {
+        for conf in self.configurations.iter() {
+            conf.display(&mut w)?;
+        }
+        w.write_all(b"\n")?;
+        Ok(())
+    }
+
+    fn halted(&self) -> bool {
+        self.configurations.iter().all(|c| c.halted())
+
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Configuration<'a> {
     prefix: VecDeque<Symbol<'a>>,
     head: (State<'a>, Symbol<'a>),
     suffix: VecDeque<Symbol<'a>>,
 }
 
-impl Configuration<'_, '_> {
-    fn step(&mut self) {
-        let (new_state, new_symbol, dir) = self.machine.delta[&self.head];
+impl<'a> Configuration<'a> {
+    fn step(&mut self, new_state: State<'a>, new_symbol: Symbol<'a>, dir: Direction) {
         self.head = (new_state, new_symbol);
         match dir {
             Direction::Left => {
