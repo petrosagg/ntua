@@ -1,0 +1,244 @@
+# - - <symbol>.
+# - - <symbol>.
+# - - <symbol>.
+# - - <symbol>.
+# * - <symbol>.
+# T                                                       <- the start of the simulated tape
+# B - <blank_state>.                                      <- the blank symbol of the simulated machine, used to extend its tape
+# c - <cur_state>.                                        <- the current state of the simulated machine
+# h - <halt_state>.                                       <- the halting state of the simulated machine
+# - - <state>. - <symbol>. - <state>. - <symbol>. {0,1}
+# - - <state>. - <symbol>. - <state>. - <symbol>. {0,1}
+# - - <state>. - <symbol>. - <state>. - <symbol>. {0,1}
+# * - <state>. - <symbol>. - <state>. - <symbol>. {0,1}
+# d                                                       <- the start of the delta function entries
+# .                                                       <- the next thing to do
+
+# The Σ alphabet of U will be lowercase alphanumerics, a list separator |, and a desription/input separator >
+> 0 1 . h c t T s S
+
+# The Γ alphabet of U will include uppercase alphanumerics, which can be used for marking, a list separator $
+> 0 1 . h c a b t T s S I O - _ $ D d E B
+
+# The set Q
+S CH1 H
+
+# Writes a or b and returns 1
+wa - ret1 a L
+wb - ret1 b L
+
+# Return 0 and run the next command
+ret0 b2currentstate b2currentstate memcmp R
+ret0 memcmp memcmp steporhalt R
+# If the current state is not the halting state set pointer a to the current state and set findransition as the next thing to do
+ret0 steporhalt a2currentstate b2deltastate R
+ret0 comparesymbol nextdeltaentry nextdeltaentry R
+ret0 writestate nextdeltaentry nextdeltaentry R
+ret0 writestate8 moveleft writestate9 R
+ret0 * ret0 * L
+
+# Return 1 and run the next command
+ret1 b2currentstate b2currentstate memcmp R
+ret1 memcmp memcmp steporhalt R
+ret1 steporhalt h . R
+ret1 b2deltastate b2deltastate comparestate R
+ret1 comparestate memcmp comparesymbol R
+ret1 nextdeltaentry a2currentstate b2deltastate R
+ret1 comparesymbol a2deltasymbol b2tapesymbol R
+ret1 b2tapesymbol b2tapesymbol comparesymbol2 R
+ret1 comparesymbol2 memcmp writestate R
+ret1 writestate b2currentstate writestate2 R
+ret1 writestate2 a2newstate writestate3 R
+ret1 writestate3 memcopy writestate4 R
+ret1 writestate4 b2tapesymbol writestate5 R
+ret1 writestate5 a2newsymbol writestate6 R
+ret1 writestate6 memcopy writestate7 R
+ret1 writestate7 movehead writestate8 R
+ret1 writestate8 resettransitionpointer writestate9 R
+ret1 writestate9 writestate10 . R
+writestate10 D S D L
+ret1 * ret1 * L
+
+# Entry point. We start the a2haltingstate routine (set pointer a to halting state) and set a2currentstate as the thing to do next
+S . a2haltingstate b2currentstate R
+
+# Set a = h
+a2haltingstate h wa h R
+a2haltingstate * a2haltingstate * R
+
+# Set a = c
+a2currentstate c wa c R
+a2currentstate * a2currentstate * R
+
+# Set b = c
+b2currentstate c wb c R
+b2currentstate * b2currentstate * R
+
+# Implementation of memcmp (Compare strings pointed to by a and b)
+memcmp a read1 a R
+memcmp b read1 b R
+memcmp * memcmp * R
+# Read one unmarked character from the first string and find it in the second
+read1 0 findsecond0 O R
+read1 1 findsecond1 I R
+read1 . findsecond. . R
+read1 * read1 * R
+# Find the beginning of the second string and then find the character in it
+findsecond0 a find0 a R
+findsecond0 b find0 b R
+findsecond0 * findsecond0 * R
+findsecond1 a find1 a R
+findsecond1 b find1 b R
+findsecond1 * findsecond1 * R
+findsecond. a find. a R
+findsecond. b find. b R
+findsecond. * findsecond. * R
+# Find 0 in the second string
+find0 0 lcmp O L
+find0 1 clearret0 1 L
+find0 * find0 * R
+# Find 1 in the second string
+find1 0 clearret0 0 L
+find1 1 lcmp I L
+find1 * find1 * R
+# Find . in the second string
+find. . clearret1 . L
+find. * find. * R
+# Go in two steps. First find the first pointer (a or b)
+lcmp a lcmp2 a L
+lcmp b lcmp2 b L
+lcmp * lcmp * L
+# Then the to the second one (i.e the first) and read the next character
+lcmp2 a read1 a R
+lcmp2 b read1 b R
+lcmp2 * lcmp2 * L
+# Return 0 while clearing any marks
+clearret0 O clearret0 0 L
+clearret0 I clearret0 1 L
+clearret0 b clearret0 - L
+clearret0 a clearret0 - L
+clearret0 D ret0 D L
+clearret0 * clearret0 * L
+# Return 1 while clearing any marks
+clearret1 O clearret1 0 L
+clearret1 I clearret1 1 L
+clearret1 b clearret1 - L
+clearret1 a clearret1 - L
+clearret1 D ret1 D L
+clearret1 * clearret1 * L
+
+# Implementation of b2deltastate
+b2deltastate $ wb $ R
+b2deltastate * b2deltastate * R
+
+# Implementation of a2deltasymbol
+a2deltasymbol $ a2deltasymbolnext $ R
+a2deltasymbol * a2deltasymbol * R
+a2deltasymbolnext . wa . R
+a2deltasymbolnext * a2deltasymbolnext * R
+
+# Implementation of a2newstate
+a2newstate $ a2newstatesymbol $ R
+a2newstate * a2newstate * R
+a2newstatesymbol . a2newstatestate . R
+a2newstatesymbol * a2newstatesymbol * R
+a2newstatestate . wa . R
+a2newstatestate * a2newstatestate * R
+
+# Implementation of a2newsymbol
+a2newsymbol $ a2newsymbolsymbol $ R
+a2newsymbol * a2newsymbol * R
+a2newsymbolsymbol . a2newsymbolstate . R
+a2newsymbolsymbol * a2newsymbolsymbol * R
+a2newsymbolstate . a2newsymbolnewstate . R
+a2newsymbolstate * a2newsymbolstate * R
+a2newsymbolnewstate . wa . R
+a2newsymbolnewstate * a2newsymbolnewstate * R
+
+# Implementation of b2tapesymbol
+b2tapesymbol T b2tapesymbol2 T R
+b2tapesymbol * b2tapesymbol * R
+b2tapesymbol2 $ wb $ R
+b2tapesymbol2 * b2tapesymbol2 * R
+
+# Implementation of nextdeltaentry
+nextdeltaentry $ nextdeltaentry2 d R
+nextdeltaentry * nextdeltaentry * R
+nextdeltaentry2 d ret1 $ L
+nextdeltaentry2 T ret0 T L
+nextdeltaentry2 * nextdeltaentry2 * R
+
+# Implementation of memcopy (Copy contents of pointer a to pointer b)
+memcopy a memcopyread1 a R
+memcopy * memcopy * R
+# Read one unmarked character from a and write it in b
+memcopyread1 0 writeb0 O R
+memcopyread1 1 writeb1 I R
+memcopyread1 . writeb. . R
+memcopyread1 * memcopyread1 * R
+# Find the beginning of b and then write the character in the first free spot
+writeb0 b write0 b R
+writeb0 * writeb0 * R
+writeb1 b write1 b R
+writeb1 * writeb1 * R
+writeb. b write. b R
+writeb. * writeb. * R
+# Write 0 in b
+write0 0 memcopyrewind O L
+write0 1 memcopyrewind O L
+write0 _ memcopyrewind O L
+write0 * write0 * R
+# Write 1 in b
+write1 0 memcopyrewind I L
+write1 1 memcopyrewind I L
+write1 _ memcopyrewind I L
+write1 * write1 * R
+# Find . in the second string
+write. . clearret1 . L
+write. _ clearret1 . L
+write. * write. * R
+# Go in two steps. First find the first pointer (a or b)
+memcopyrewind a memcopyread1 a R
+memcopyrewind * memcopyrewind * L
+
+# Implementation of movehead
+# Seek to old state of transition
+movehead $ movehead1 $ R
+movehead * movehead * R
+# Seek to old symbol of transition
+movehead1 . movehead2 . R
+movehead1 * movehead1 * R
+# Seek to new state of transition
+movehead2 . movehead3 . R
+movehead2 * movehead2 * R
+# Seek to new symbol of transition
+movehead3 . movehead4 . R
+movehead3 * movehead3 * R
+# Seek to move of transition
+movehead4 . movehead5 . R
+movehead4 * movehead4 * R
+# Move to the right
+movehead5 0 moveleft 0 L
+movehead5 1 moveright 1 L
+moveright $ moveright2 t R
+moveright * moveright * R
+moveright2 t ret1 $ L
+moveright2 _ extendtape $ R
+moveright2 * moveright2 * R
+moveleft $ moveleft2 t L
+moveleft * moveleft * R
+moveleft2 t ret1 $ L
+moveleft2 * moveleft2 * L
+
+# Implementation of extendtape
+extendtape _ extendtape2 b L
+extendtape2 B extendtape3 B R
+extendtape2 * extendtape2 * L
+extendtape3 - memcopy a L
+
+# Implementation of resettransitionpointer
+resettransitionpointer $ resettransitionpointer2 d L
+resettransitionpointer * resettransitionpointer * R
+resettransitionpointer2 D resettransitionpointer3 D R
+resettransitionpointer2 * resettransitionpointer2 * L
+resettransitionpointer3 d ret1 $ L

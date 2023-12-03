@@ -11,6 +11,10 @@ const HALT: State<'static> = State("H");
 /// The symbol for a blank spot on the tape
 const BLANK: Symbol<'static> = Symbol("_");
 
+/// The wildcard symbol to faciliate describing states that mostly traverse the tape and only take
+/// action when they find a particular symbol
+const WILDCARD: Symbol<'static> = Symbol("*");
+
 /// An element of the set Σ
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct State<'a>(&'a str);
@@ -88,14 +92,22 @@ impl<'a> MachineDescription<'a> {
                 _ => None,
             });
             // TODO: check that q0 and q1 are from Q and that s0 and s1 are from Σ
-
+            //
             let Some(((q0, s0), ((q1, s1), m))) = q0.zip(s0).zip(q1.zip(s1).zip(m)) else {
                 return Err("invalid δ transition entry".into());
             };
-            if parts.next().is_some() {
-                return Err("invalid δ transition entry".into());
+
+            if s0 == WILDCARD {
+                for &symbol in &gamma {
+                    let mut transitions = delta.entry((q0, symbol)).or_insert_with(HashSet::new);
+                    if transitions.is_empty() {
+                        transitions.insert((q1, symbol, m));
+                    }
+                }
+
+            } else {
+                delta.entry((q0, s0)).or_insert_with(HashSet::new).insert((q1, s1, m));
             }
-            delta.entry((q0, s0)).or_insert_with(HashSet::new).insert((q1, s1, m));
         }
 
         // TODO: check that the input contains only symbols from Σ
@@ -111,12 +123,12 @@ impl<'a> MachineDescription<'a> {
                 }
             }
         }
-        if !missing.is_empty() {
-            for (state, symbol) in missing {
-                println!("{} {}", state.0, symbol.0);
-            }
-            return Err("the transitions above are missing from δ transition function".into());
-        }
+        // if !missing.is_empty() {
+        //     for (state, symbol) in missing {
+        //         println!("{} {}", state.0, symbol.0);
+        //     }
+        //     return Err("the transitions above are missing from δ transition function".into());
+        // }
 
         Ok(Self {
             sigma,
@@ -152,23 +164,27 @@ struct MultiConfiguration<'m, 'a> {
 }
 
 impl MultiConfiguration<'_, '_> {
-    fn step(&mut self) {
+    fn step(&mut self) -> bool {
+        let mut made_progress = false;
         for _ in 0..self.configurations.len() {
             let conf = self.configurations.pop_front().unwrap();
-            let actions = &self.machine.delta[&conf.head];
+            let Some(actions) = self.machine.delta.get(&conf.head) else {
+                continue;
+            };
             for &(new_state, new_symbol, dir) in actions {
+                made_progress = true;
                 let mut conf = conf.clone();
                 conf.step(new_state, new_symbol, dir);
                 self.configurations.push_back(conf);
             }
         }
+        made_progress
     }
 
     fn display<W: WriteColor>(&self, mut w: W) -> std::io::Result<()> {
         for conf in self.configurations.iter() {
             conf.display(&mut w)?;
         }
-        w.write_all(b"\n")?;
         Ok(())
     }
 
@@ -206,7 +222,16 @@ impl<'a> Configuration<'a> {
 
     fn display<W: WriteColor>(&self, mut w: W) -> std::io::Result<()> {
         for symbol in &self.prefix {
+            if symbol.0.len() > 1 {
+                let mut state_color = ColorSpec::new();
+                state_color
+                    .set_fg(Some(Color::Black))
+                    .set_bg(Some(Color::Blue))
+                    .set_bold(true);
+                w.set_color(&state_color)?;
+            }
             w.write_all(symbol.0.as_bytes())?;
+            w.reset()?;
         }
         let mut state_color = ColorSpec::new();
         state_color
@@ -215,8 +240,13 @@ impl<'a> Configuration<'a> {
             .set_bold(true);
         w.set_color(&state_color)?;
         w.write_all(self.head.0 .0.as_bytes())?;
-        w.reset()?;
+        state_color
+            .set_fg(Some(Color::Black))
+            .set_bg(Some(Color::Cyan))
+            .set_bold(true);
+        w.set_color(&state_color)?;
         w.write_all(self.head.1 .0.as_bytes())?;
+        w.reset()?;
         for symbol in &self.suffix {
             w.write_all(symbol.0.as_bytes())?;
         }
@@ -246,7 +276,9 @@ fn main() -> Result<(), String> {
         .display(&mut stdout)
         .map_err(|e| e.to_string())?;
     while !configuration.halted() {
-        configuration.step();
+        if !configuration.step() {
+            break;
+        }
         configuration
             .display(&mut stdout)
             .map_err(|e| e.to_string())?;
