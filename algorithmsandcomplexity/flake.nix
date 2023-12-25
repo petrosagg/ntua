@@ -10,10 +10,10 @@
       pkgs = nixpkgs.legacyPackages.${system};
       tex = pkgs.texlive.combine {
         inherit (pkgs.texlive) scheme-minimal latex-bin latexmk xetex
-        algorithmicx algorithms amsmath babel-english bookmark caption cite
+        algorithmicx algorithms amsmath babel-english babel-greek greek-fontenc hyphen-greek gfsartemisia gfsneohellenic noto fontspec bookmark caption cite
         colortbl enumitem epstopdf epstopdf-pkg float footmisc grfext hyperref
         import infwarerr kvdefinekeys kvoptions kvsetkeys listings ltxcmds
-        mathtools nicematrix oberdiek pgf thmtools tools varwidth;
+        mathtools nicematrix oberdiek pgf thmtools tools varwidth lm-math;
       };
     in rec {
       packages = {
@@ -25,9 +25,8 @@
           buildPhase = ''
             export PATH="${pkgs.lib.makeBinPath buildInputs}";
             mkdir -p .cache/texmf-var
-            cd ex1;
+            cd ex2;
             env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
-              SOURCE_DATE_EPOCH=$(date -d "2021-11-30" +%s) \
               latexmk -interaction=nonstopmode -pdf -xelatex \
               main.tex
           '';

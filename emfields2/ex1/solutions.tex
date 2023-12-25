@@ -2,12 +2,113 @@
 
 Αρχικά ορίζουμε τρεις περιοχές του χώρου:
 
-\[ 1: 0 \leq r \leq a \]
-\[ 2: a \leq r \leq b \]
-\[ 3: b \leq r \]
+\begin{equation} \label{eq1}
+\begin{split}
+  1: & 0 \leq r \leq b \\
+  2: & b \leq r \leq a \\
+  3: & a \leq r
+\end{split}
+\end{equation}
+
+\subsection{Εύρεση δυναμικού}
+
+Σε όλες τις περιοχές υπάρχει ή κενό ή αφόρτιστο διηλεκτρικό, συνεπώς ισχύει η
+εξίσωση Poisson για το δυναμικό:
+
+\[ \nabla^{2}\Phi = 0 \]
+
+Λόγω της συμμετρίας της διάταξης το δυναμικό σε κάθε περιοχή $i$ θα είναι της
+μορφής $\Phi_{i} = \Phi_{i}(r)$. Συνεπώς, λύνοντας την διαφορική εξίσωση έχουμε
 
 
+\begin{equation} \label{eq1}
+\begin{split}
+           & \nabla^{2}\Phi_{i} = 0 \\
+  \implies & \frac{1}{r^{2}}\frac{\partial}{\partial r}(r^{2}\frac{\partial \Phi_{i}}{\partial r}) = 0 \\
+  \implies & r^{2}\frac{\partial \Phi_{i}}{\partial r} = A_{i} \\
+  \implies & \frac{\partial \Phi_{i}}{\partial r} = \frac{A_{i}}{r^{2}} \\
+  \implies & \Phi_{i} = B_{i} - \frac{A_{i}}{r}
+\end{split}
+\end{equation}
 
+Στην περιοχή 1 παρατηρούμε ότι η προφανής λύση $\Phi_{1}(r) = V_{b}$ ικανοποιεί
+την διαφορική εξίσωση και την συνοριακή συνθήκη $\Phi_{1}(b) = V_{b}$. Από
+το θεώρημα μοναδικότητας ξέρουμε ότι αυτή είναι και η σωστή λύση. Συπεπώς
+$A_{1} = 0$ και $B_{1} = 0$.
+
+Στην περιοχή 2 μέσω των δύο συνοριακών συνθηκών $\Phi_{2}(b) = V_{b}$ και
+$\Phi_{2}(a) = V_{a}$ καταλήγουμε σε ένα σύστημα δύο εξισώσεων.
+
+\begin{equation} \label{eq1}
+\begin{split}
+  B_{2} - \frac{A_{2}}{a} & = V_{a} \\
+  B_{2} - \frac{A_{2}}{b} & = V_{b}
+\end{split}
+\end{equation}
+
+Λύνοντας το σύστημα και αντικαθιστόντας στη (2) παίρνουμε το δυναμικό στην περιοχή 2.
+
+\[ \Phi_{2}(r) = \frac{bV_{b} - aV_{a}}{b - a} - \frac{V_{b} - V_{a}}{b-a}\cdot\frac{ab}{r} \]
+
+Τέλος, στην περιοχή 3 από τη συνθήκη στο άπειρο προκύπτει ότι
+
+\[ \Phi_{3}(r\to\infty) = 0 \implies B_{3} = 0 \]
+
+Και από τη συνοριακή συνθήκη στο $r = a$ έχουμε
+
+\begin{equation} \label{eq1}
+\begin{split}
+     \Phi_{3}(a) & = -\frac{A_{3}}{a} = V_{a} \\
+  \implies A_{3} & = -aV_{a}
+\end{split}
+\end{equation}
+
+Άρα τελικά το δυναμικό σε όλο τον χώρο είναι
+
+\[ \Phi(r) = \left\{
+              \begin{array}{lr}
+                V_{b}                                                                         & 0 \leq r \leq b \\
+                \frac{bV_{b} - aV_{a}}{b - a} - \frac{V_{b} - V_{a}}{b-a}\cdot\frac{ab}{r}    & b \leq r \leq a \\
+                V_{a}\frac{a}{r}                                                              & a \leq r
+              \end{array}
+            \right.
+\]
+
+\subsection{Εύρεση ηλεκτρικού πεδίου}
+
+Το ηλεκτρικό πεδίο βρίσκεται από τη σχέση $\textbf{E} = -\nabla \Phi$ σε κάθε
+περιοχή του χώρου. Συνεπώς το ηλεκτρικό πεδίο θα είναι:
+
+\[ \textbf{E}(r) = \left\{
+              \begin{array}{lr}
+                0\hat{\mathbf{r}}                                                & 0 \leq r \leq b \\
+                -\frac{V_{b} - V_{a}}{b-a}\cdot\frac{ab}{r^{2}}\hat{\mathbf{r}}  & b \leq r \leq a \\
+                V_{a}\frac{a}{r^{2}}\hat{\mathbf{r}}                             & a \leq r
+              \end{array}
+            \right.
+\]
+
+\subsection{Επιφανειακές πυκνότητες φορτίου}
+
+Στην επιφάνεια $r=b$ ισχύει η οριακή συνθήκη $\sigma(r=b) =
+\hat{\mathbf{r}}\cdot(\textbf{D}(b_{+}) - \textbf{D}(b_{-}))$. Αντικαθιστώντας έχουμε
+
+\begin{equation} \label{eq1}
+\begin{split}
+  \sigma(r=b) & = D_{r}(b_{+}) - D_{r}(b_{-}) \\
+              & = -\epsilon_{a}\frac{V_{b} - V_{a}}{b-a}\cdot\frac{b}{a}
+\end{split}
+\end{equation}
+
+Στην επιφάνεια $r=a$ ισχύει η οριακή συνθήκη $\sigma(r=a) =
+\hat{\mathbf{r}}\cdot[\textbf{D}(a_{+}) - \textbf{D}(a_{-})]$. Αντικαθιστώντας έχουμε
+
+\begin{equation} \label{eq1}
+\begin{split}
+  \sigma(r=a) & = D_{r}(a_{+}) - D_{r}(a_{-}) \\
+              & = \epsilon_{0}\frac{V_{a}}{a} + \epsilon_{a}\frac{V_{b} - V_{a}}{b-a}\cdot\frac{b}{a}
+\end{split}
+\end{equation}
 
 % \section{Άσκηση 2}
 % 

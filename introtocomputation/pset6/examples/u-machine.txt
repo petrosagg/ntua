@@ -15,7 +15,7 @@
 # .                                                       <- the next thing to do
 
 # The Σ alphabet of U will be lowercase alphanumerics, a list separator |, and a desription/input separator >
-> 0 1 . h c t T s S
+0 1 . |
 
 # The Γ alphabet of U will include uppercase alphanumerics, which can be used for marking, a list separator $
 > 0 1 . h c a b t T s S I O - _ $ D d E B
@@ -28,7 +28,7 @@ wa - ret1 a L
 wb - ret1 b L
 
 # Return 0 and run the next command
-ret0 b2currentstate b2currentstate memcmp R
+ret0 shouldhalt shouldhalt memcmp R
 ret0 memcmp memcmp steporhalt R
 # If the current state is not the halting state set pointer a to the current state and set findransition as the next thing to do
 ret0 steporhalt a2currentstate b2deltastate R
@@ -38,7 +38,7 @@ ret0 writestate8 moveleft writestate9 R
 ret0 * ret0 * L
 
 # Return 1 and run the next command
-ret1 b2currentstate b2currentstate memcmp R
+ret1 shouldhalt shouldhalt memcmp R
 ret1 memcmp memcmp steporhalt R
 ret1 steporhalt h . R
 ret1 b2deltastate b2deltastate comparestate R
@@ -47,12 +47,12 @@ ret1 nextdeltaentry a2currentstate b2deltastate R
 ret1 comparesymbol a2deltasymbol b2tapesymbol R
 ret1 b2tapesymbol b2tapesymbol comparesymbol2 R
 ret1 comparesymbol2 memcmp writestate R
-ret1 writestate b2currentstate writestate2 R
+ret1 writestate shouldhalt writestate2 R
 ret1 writestate2 a2newstate writestate3 R
-ret1 writestate3 memcopy writestate4 R
+ret1 writestate3 copy writestate4 R
 ret1 writestate4 b2tapesymbol writestate5 R
 ret1 writestate5 a2newsymbol writestate6 R
-ret1 writestate6 memcopy writestate7 R
+ret1 writestate6 copy writestate7 R
 ret1 writestate7 movehead writestate8 R
 ret1 writestate8 resettransitionpointer writestate9 R
 ret1 writestate9 writestate10 . R
@@ -60,71 +60,173 @@ writestate10 D S D L
 ret1 * ret1 * L
 
 # Entry point. We start the a2haltingstate routine (set pointer a to halting state) and set a2currentstate as the thing to do next
-S . a2haltingstate b2currentstate R
+S > markstates > R
 
-# Set a = h
-a2haltingstate h wa h R
+# Set a = <halting state>
+a2haltingstate | ret1 a L
 a2haltingstate * a2haltingstate * R
 
 # Set a = c
 a2currentstate c wa c R
 a2currentstate * a2currentstate * R
 
-# Set b = c
-b2currentstate c wb c R
-b2currentstate * b2currentstate * R
+# Check if halt_state == cur_state
+shouldhalt | shouldhalt2 | R
+shouldhalt2 0 shouldhalt2 0 R
+shouldhalt2 1 shouldhalt2 1 R
+shouldhalt2 . shouldhalt2 . R
+shouldhalt2 | shouldhalt3 a R
+shouldhalt3 0 shouldhalt3 0 R
+shouldhalt3 1 shouldhalt3 1 R
+shouldhalt3 . shouldhalt4 b L
+shouldhalt4 0 shouldhalt4 0 L
+shouldhalt4 1 shouldhalt4 1 L
+shouldhalt4 a memcmp a L
+# Restore a
+prepare a prepare1 | L
+prepare 0 prepare 0 R
+prepare 1 prepare 1 R
+prepare . prepare . R
+prepare | prepare | R
+prepare1 0 prepare1 0 L
+prepare1 1 prepare1 1 L
+prepare1 . prepare1 . L
+prepare1 | findtransition a L
+
+# Find a transition to apply
+findtransition . memcmp statecheck R
+
+# Mark the transition's symbol with a and the current symbol with b
+symbolmark a symbolmark2 . R
+symbolmark 0 symbolmark 0 R
+symbolmark 1 symbolmark 1 R
+symbolmark . symbolmark . R
+symbolmark2 0 symbolmark2 0 R
+symbolmark2 1 symbolmark2 1 R
+symbolmark2 . symbolmark3 a R
+symbolmark3 0 symbolmark3 0 R
+symbolmark3 1 symbolmark3 1 R
+symbolmark3 . symbolmark3 . R
+symbolmark3 | symbolmark3 | R
+symbolmark3 b symbolmark4 . R
+symbolmark4 0 symbolmark4 0 R
+symbolmark4 1 symbolmark4 1 R
+symbolmark4 . symbolmark4 . R
+symbolmark4 | symbolmark5 | R
+symbolmark5 0 symbolmark5 0 R
+symbolmark5 1 symbolmark5 1 R
+symbolmark5 . symbolmark5 . R
+symbolmark5 | clearret1 b L
+
+# Copy the state of this transition to the current state
+copynewstate a copynewstate2 . R
+copynewstate 0 copynewstate 0 R
+copynewstate 1 copynewstate 1 R
+copynewstate . copynewstate . R
+copynewstate2 0 copynewstate2 0 R
+copynewstate2 1 copynewstate2 1 R
+copynewstate2 . copynewstate3 a R
+copynewstate3 0 copynewstate3 0 R
+copynewstate3 1 copynewstate3 1 R
+copynewstate3 . copynewstate3 . R
+copynewstate3 | copynewstate4 | R
+copynewstate4 0 copynewstate4 0 R
+copynewstate4 1 copynewstate4 1 R
+copynewstate4 . copyrewind b L
+
+# Copy the symbol of this transition to the current head position
+copynewsymbol a copynewsymbol2 . R
+copynewsymbol 0 copynewsymbol 0 R
+copynewsymbol 1 copynewsymbol 1 R
+copynewsymbol . copynewsymbol . R
+copynewsymbol2 0 copynewsymbol2 0 R
+copynewsymbol2 1 copynewsymbol2 1 R
+copynewsymbol2 . copynewsymbol3 a R
+
+copynewsymbol3 0 copynewsymbol3 0 R
+copynewsymbol3 1 copynewsymbol3 1 R
+copynewsymbol3 . copynewsymbol3 . R
+copynewsymbol3 | copynewsymbol3 | R
+copynewsymbol3 b copyrewind . R
 
 # Implementation of memcmp (Compare strings pointed to by a and b)
 memcmp a read1 a R
-memcmp b read1 b R
-memcmp * memcmp * R
-# Read one unmarked character from the first string and find it in the second
-read1 0 findsecond0 O R
-read1 1 findsecond1 I R
-read1 . findsecond. . R
+memcmp | memcmp | R
+memcmp 0 memcmp 0 R
+memcmp 1 memcmp 1 R
+memcmp . memcmp . R
+# Read one unmarked character from a and mark it
+read1 0 findb0 O R
+read1 1 findb1 I R
+read1 . findb. . R
+read1 b find. b R
 read1 * read1 * R
-# Find the beginning of the second string and then find the character in it
-findsecond0 a find0 a R
-findsecond0 b find0 b R
-findsecond0 * findsecond0 * R
-findsecond1 a find1 a R
-findsecond1 b find1 b R
-findsecond1 * findsecond1 * R
-findsecond. a find. a R
-findsecond. b find. b R
-findsecond. * findsecond. * R
-# Find 0 in the second string
+# Find the beginning of b and then find the character in it
+findb0 b find0 b R
+findb0 | findb0 | R
+findb0 0 findb0 0 R
+findb0 1 findb0 1 R
+findb0 O findb0 O R
+findb0 I findb0 I R
+findb0 . findb0 . R
+findb1 b find1 b R
+findb1 | findb1 | R
+findb1 0 findb1 0 R
+findb1 1 findb1 1 R
+findb1 O findb1 O R
+findb1 I findb1 I R
+findb1 . findb1 . R
+findb. b find. b R
+findb. | findb. | R
+findb. 0 findb. 0 R
+findb. 1 findb. 1 R
+findb. O findb. O R
+findb. I findb. I R
+findb. . findb. . R
+# Find 0 in b
 find0 0 lcmp O L
 find0 1 clearret0 1 L
-find0 * find0 * R
-# Find 1 in the second string
+find0 O find0 O R
+find0 I find0 I R
+# Find 1 in b
 find1 0 clearret0 0 L
 find1 1 lcmp I L
-find1 * find1 * R
-# Find . in the second string
+find1 O find1 O R
+find1 I find1 I R
+# Find . in b
 find. . clearret1 . L
-find. * find. * R
-# Go in two steps. First find the first pointer (a or b)
-lcmp a lcmp2 a L
-lcmp b lcmp2 b L
-lcmp * lcmp * L
-# Then the to the second one (i.e the first) and read the next character
-lcmp2 a read1 a R
-lcmp2 b read1 b R
-lcmp2 * lcmp2 * L
+find. O find. O R
+find. I find. I R
+# Go back to a and read another character
+lcmp a read1 a R
+lcmp 0 lcmp 0 L
+lcmp 1 lcmp 1 L
+lcmp . lcmp . L
+lcmp O lcmp O L
+lcmp I lcmp I L
+lcmp | lcmp | L
+lcmp b lcmp b L
 # Return 0 while clearing any marks
 clearret0 O clearret0 0 L
 clearret0 I clearret0 1 L
-clearret0 b clearret0 - L
-clearret0 a clearret0 - L
-clearret0 D ret0 D L
+clearret0 0 clearret0 0 L
+clearret0 1 clearret0 1 L
+clearret0 | clearret0 | L
+clearret0 shouldhalt prepare . R
 clearret0 * clearret0 * L
 # Return 1 while clearing any marks
 clearret1 O clearret1 0 L
 clearret1 I clearret1 1 L
-clearret1 b clearret1 - L
-clearret1 a clearret1 - L
-clearret1 D ret1 D L
+clearret1 0 clearret1 0 L
+clearret1 1 clearret1 1 L
+clearret1 | clearret1 | L
+clearret1 shouldhalt h . R
+clearret1 prepare findtransition . R
+clearret1 statecheck symbolmark symbolmark R
+clearret1 symbolmark memcmp symbolcheck R
+clearret1 symbolcheck copynewstate copynewstate R
+clearret1 copynewstate copynewsymbol copynewsymbol R
+clearret1 copynewsymbol movehead movehead R
 clearret1 * clearret1 * L
 
 # Implementation of b2deltastate
@@ -168,77 +270,116 @@ nextdeltaentry2 d ret1 $ L
 nextdeltaentry2 T ret0 T L
 nextdeltaentry2 * nextdeltaentry2 * R
 
-# Implementation of memcopy (Copy contents of pointer a to pointer b)
-memcopy a memcopyread1 a R
-memcopy * memcopy * R
+# Implementation of copy (Copy contents of pointer a to pointer b)
+copy a copyread1 a R
+copy * copy * R
 # Read one unmarked character from a and write it in b
-memcopyread1 0 writeb0 O R
-memcopyread1 1 writeb1 I R
-memcopyread1 . writeb. . R
-memcopyread1 * memcopyread1 * R
+copyread1 0 writeb0 O R
+copyread1 1 writeb1 I R
+copyread1 . writeb. . R
+copyread1 * copyread1 * R
 # Find the beginning of b and then write the character in the first free spot
 writeb0 b write0 b R
-writeb0 * writeb0 * R
+writeb0 0 writeb0 0 R
+writeb0 1 writeb0 1 R
+writeb0 . writeb0 . R
+writeb0 | writeb0 | R
 writeb1 b write1 b R
-writeb1 * writeb1 * R
+writeb1 0 writeb1 0 R
+writeb1 1 writeb1 1 R
+writeb1 . writeb1 . R
+writeb1 | writeb1 | R
 writeb. b write. b R
-writeb. * writeb. * R
+writeb. 0 writeb. 0 R
+writeb. 1 writeb. 1 R
+writeb. . writeb. . R
+writeb. | writeb. | R
 # Write 0 in b
-write0 0 memcopyrewind O L
-write0 1 memcopyrewind O L
-write0 _ memcopyrewind O L
-write0 * write0 * R
+write0 0 copyrewind O L
+write0 1 copyrewind O L
+write0 _ copyrewind O L
+write0 O write0 O R
+write0 I write0 I R
 # Write 1 in b
-write1 0 memcopyrewind I L
-write1 1 memcopyrewind I L
-write1 _ memcopyrewind I L
-write1 * write1 * R
-# Find . in the second string
+write1 0 copyrewind I L
+write1 1 copyrewind I L
+write1 _ copyrewind I L
+write1 O write1 O R
+write1 I write1 I R
+# Find . in b
 write. . clearret1 . L
 write. _ clearret1 . L
-write. * write. * R
-# Go in two steps. First find the first pointer (a or b)
-memcopyrewind a memcopyread1 a R
-memcopyrewind * memcopyrewind * L
+write. O write. O R
+write. I write. I R
+# Go back to beginning of a
+copyrewind a copyread1 a R
+copyrewind 0 copyrewind 0 L
+copyrewind 1 copyrewind 1 L
+copyrewind . copyrewind . L
+copyrewind | copyrewind | L
+copyrewind O copyrewind O L
+copyrewind I copyrewind I L
+copyrewind b copyrewind b L
 
 # Implementation of movehead
-# Seek to old state of transition
-movehead $ movehead1 $ R
-movehead * movehead * R
-# Seek to old symbol of transition
+movehead a movehead1 . R
+movehead 0 movehead 0 R
+movehead 1 movehead 1 R
+movehead . movehead . R
+movehead1 0 movehead1 0 R
+movehead1 1 movehead1 1 R
 movehead1 . movehead2 . R
-movehead1 * movehead1 * R
-# Seek to new state of transition
-movehead2 . movehead3 . R
-movehead2 * movehead2 * R
-# Seek to new symbol of transition
-movehead3 . movehead4 . R
-movehead3 * movehead3 * R
-# Seek to move of transition
-movehead4 . movehead5 . R
-movehead4 * movehead4 * R
-# Move to the right
-movehead5 0 moveleft 0 L
-movehead5 1 moveright 1 L
-moveright $ moveright2 t R
-moveright * moveright * R
-moveright2 t ret1 $ L
-moveright2 _ extendtape $ R
-moveright2 * moveright2 * R
-moveleft $ moveleft2 t L
-moveleft * moveleft * R
-moveleft2 t ret1 $ L
-moveleft2 * moveleft2 * L
+movehead2 0 moveleft 0 L
+movehead2 1 moveright 1 L
 
-# Implementation of extendtape
-extendtape _ extendtape2 b L
-extendtape2 B extendtape3 B R
-extendtape2 * extendtape2 * L
-extendtape3 - memcopy a L
+# Implementation of moveright
+moveright 0 moveright 0 R
+moveright 1 moveright 1 R
+moveright . moveright . R
+moveright | moveright | R
+moveright b moveright1 . R
+moveright1 0 moveright1 0 R
+moveright1 1 moveright1 1 R
+moveright1 . moveright2 b R
+moveright2 _ extendtape _ L
+moveright2 0 clearret1 0 L
+moveright2 1 clearret1 1 L
 
-# Implementation of resettransitionpointer
-resettransitionpointer $ resettransitionpointer2 d L
-resettransitionpointer * resettransitionpointer * R
-resettransitionpointer2 D resettransitionpointer3 D R
-resettransitionpointer2 * resettransitionpointer2 * L
-resettransitionpointer3 d ret1 $ L
+# 
+# # Seek to old symbol of transition
+# movehead1 . movehead2 . R
+# movehead1 * movehead1 * R
+# # Seek to new state of transition
+# movehead2 . movehead3 . R
+# movehead2 * movehead2 * R
+# # Seek to new symbol of transition
+# movehead3 . movehead4 . R
+# movehead3 * movehead3 * R
+# # Seek to move of transition
+# movehead4 . movehead5 . R
+# movehead4 * movehead4 * R
+# # Move to the right
+# movehead5 0 moveleft 0 L
+# movehead5 1 moveright 1 L
+# moveright $ moveright2 t R
+# moveright * moveright * R
+# moveright2 t ret1 $ L
+# moveright2 _ extendtape $ R
+# moveright2 * moveright2 * R
+# moveleft $ moveleft2 t L
+# moveleft * moveleft * R
+# moveleft2 t ret1 $ L
+# moveleft2 * moveleft2 * L
+# 
+# # Implementation of extendtape
+# extendtape _ extendtape2 b L
+# extendtape2 B extendtape3 B R
+# extendtape2 * extendtape2 * L
+# extendtape3 - copy a L
+# 
+# # Implementation of resettransitionpointer
+# resettransitionpointer $ resettransitionpointer2 d L
+# resettransitionpointer * resettransitionpointer * R
+# resettransitionpointer2 D resettransitionpointer3 D R
+# resettransitionpointer2 * resettransitionpointer2 * L
+# resettransitionpointer3 d ret1 $ L

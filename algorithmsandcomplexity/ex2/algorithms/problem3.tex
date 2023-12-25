@@ -1,0 +1,19 @@
+\begin{algorithm}[H]
+  \caption{\label{alg:problem-3}
+    The solution to Problem 3
+    }
+    \begin{algorithmic}[1]
+      \Function{\textsf{doSomething}}{p, q, \textsf{data}}
+        \Let{r}{2p * q + \textsf{data}[5]}
+        \If{$r = 0$}
+          \State\Return{$-1$}
+        \EndIf 
+        \For{$b \in \textsf{data}$}
+          \Let{r}{r + b}
+        \EndFor
+        \State\Return{$r$}
+      \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+
